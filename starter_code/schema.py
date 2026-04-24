@@ -9,14 +9,15 @@ from datetime import datetime
 # This is v1. Note: A breaking change is coming at 11:00 AM!
 
 class UnifiedDocument(BaseModel):
-    # TODO: Define the v1 schema. 
-    # Suggested fields: document_id, content, source_type, author, timestamp, metadata
-    
+    # v1 schema implementation
     document_id: str
     content: str
-    source_type: str # e.g., 'PDF', 'Video', 'HTML', 'CSV', 'Code'
+    source_type: str  # e.g., 'PDF', 'Video', 'HTML', 'CSV', 'Code', 'Transcript'
     author: Optional[str] = "Unknown"
     timestamp: Optional[datetime] = None
-    
-    # You might want a dict for source-specific metadata
+
+    # Generic container for source-specific metadata
     source_metadata: dict = Field(default_factory=dict)
+
+    class Config:
+        orm_mode = True

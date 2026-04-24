@@ -1,6 +1,10 @@
 import json
 import time
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env (e.g., GEMINI_API_KEY)
+load_dotenv()
 
 # Robust path handling
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -36,13 +40,56 @@ def main():
     # ----------------------------------------------
 
     # TODO: Call each processing function (extract_pdf_data, clean_transcript, etc.)
-    # TODO: Run quality gates (run_quality_gate) before adding to final_kb
-    # TODO: Save final_kb to output_path using json.dump
-    
-    # Example:
-    # doc = extract_pdf_data(pdf_path)
-    # if doc and run_quality_gate(doc):
-    #     final_kb.append(doc)
+    # Process PDF (Gemini-based). extract_pdf_data returns None on failure.
+    try:
+        pdf_doc = extract_pdf_data(pdf_path)
+    except Exception as e:
+        print(f"PDF extraction error: {e}")
+        pdf_doc = None
+    if pdf_doc and run_quality_gate(pdf_doc):
+        final_kb.append(pdf_doc)
+
+    # Transcript
+    try:
+        trans_doc = clean_transcript(trans_path)
+        if trans_doc and run_quality_gate(trans_doc):
+            final_kb.append(trans_doc)
+    except Exception as e:
+        print(f"Transcript processing error: {e}")
+
+    # HTML catalog (may return list)
+    try:
+        html_docs = parse_html_catalog(html_path)
+        for d in html_docs:
+            if run_quality_gate(d):
+                final_kb.append(d)
+    except Exception as e:
+        print(f"HTML parsing error: {e}")
+
+    # CSV (returns list)
+    try:
+        csv_docs = process_sales_csv(csv_path)
+        for d in csv_docs:
+            if run_quality_gate(d):
+                final_kb.append(d)
+    except Exception as e:
+        print(f"CSV processing error: {e}")
+
+    # Legacy code
+    try:
+        code_doc = extract_logic_from_code(code_path)
+        if code_doc and run_quality_gate(code_doc):
+            final_kb.append(code_doc)
+    except Exception as e:
+        print(f"Legacy code processing error: {e}")
+
+    # Save final_kb
+    try:
+        with open(output_path, 'w', encoding='utf-8') as out:
+            json.dump(final_kb, out, ensure_ascii=False, indent=2)
+        print(f"Saved processed KB to {output_path}")
+    except Exception as e:
+        print(f"Failed to save output: {e}")
 
     end_time = time.time()
     print(f"Pipeline finished in {end_time - start_time:.2f} seconds.")
